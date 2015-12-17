@@ -66,10 +66,10 @@
 
 #pragma mark - Helpers
 - (void)selectTabWithNumberFive {
-    [self selectTabAtIndex:5];
+    [self selectTabAtIndex:1];
 }
 - (void)loadContent {
-    self.numberOfTabs = 10;
+    self.numberOfTabs = 6;
 }
 
 #pragma mark - Interface Orientation Changes
@@ -85,12 +85,21 @@
 }
 - (UIView *)viewPager:(ViewPagerController *)viewPager viewForTabAtIndex:(NSUInteger)index {
     
+    NSArray *titles = @[@"ТОВАРЫ (3)", @"АВТОРЫ (10)", @"ЖАНРЫ (1)", @"ИЗДАТ. (10)", @"СЕРИИ (10)", @"ЧТО ИЩУТ (10)"];
+    
+    NSAttributedString *titleString = [[NSAttributedString alloc] initWithString:titles[index]
+                                                                      attributes:@{
+                                                                                   NSKernAttributeName: @(1.5),
+                                                                                   NSForegroundColorAttributeName: [UIColor colorWithRed:137./255 green:137./255 blue:137./255 alpha:1.0],
+                                                                                   NSFontAttributeName: [UIFont systemFontOfSize:13]
+                                                                                   }];
+    
     UILabel *label = [UILabel new];
     label.backgroundColor = [UIColor clearColor];
-    label.font = [UIFont systemFontOfSize:12.0];
-    label.text = [NSString stringWithFormat:@"Tab #%i", index];
     label.textAlignment = NSTextAlignmentCenter;
-    label.textColor = [UIColor blackColor];
+    
+    label.attributedText = titleString;
+    
     [label sizeToFit];
     
     return label;
@@ -112,19 +121,19 @@
         case ViewPagerOptionStartFromSecondTab:
             return 0.0;
         case ViewPagerOptionCenterCurrentTab:
-            return 1.0;
-        case ViewPagerOptionTabLocation:
             return 0.0;
+        case ViewPagerOptionTabLocation:
+            return 1.0;
         case ViewPagerOptionTabHeight:
             return 49.0;
         case ViewPagerOptionTabOffset:
-            return 36.0;
+            return 15.0;
         case ViewPagerOptionTabWidth:
-            return UIInterfaceOrientationIsLandscape(self.interfaceOrientation) ? 128.0 : 96.0;
+            return 50.0;
         case ViewPagerOptionFixFormerTabsPositions:
-            return 1.0;
+            return 0.0;
         case ViewPagerOptionFixLatterTabsPositions:
-            return 1.0;
+            return 0.0;
         default:
             return value;
     }
