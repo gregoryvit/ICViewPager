@@ -62,6 +62,7 @@
 @interface TabView : UIView
 @property (nonatomic, getter = isSelected) BOOL selected;
 @property (nonatomic) UIColor *indicatorColor;
+@property (nonatomic, strong) UILabel *contentLabel;
 @end
 
 @implementation TabView
@@ -75,6 +76,13 @@
 - (void)setSelected:(BOOL)selected {
     _selected = selected;
     // Update view as state changed
+    
+    if (selected) {
+        self.contentLabel.textColor= self.indicatorColor;
+    } else {
+        self.contentLabel.textColor= [UIColor colorWithRed:137./255 green:137./255 blue:137./255 alpha:1.0];
+    }
+    
     [self setNeedsDisplay];
 }
 - (void)drawRect:(CGRect)rect {
@@ -103,9 +111,9 @@
         bezierPath = [UIBezierPath bezierPath];
         
         // Draw the indicator
-        [bezierPath moveToPoint:CGPointMake(0.0, CGRectGetHeight(rect) - 1.0)];
-        [bezierPath addLineToPoint:CGPointMake(CGRectGetWidth(rect), CGRectGetHeight(rect) - 1.0)];
-        [bezierPath setLineWidth:5.0];
+        [bezierPath moveToPoint:CGPointMake(CGRectGetMinX(self.contentLabel.frame), CGRectGetMaxY(self.contentLabel.frame) + 2.0)];
+        [bezierPath addLineToPoint:CGPointMake(CGRectGetMaxX(self.contentLabel.frame), CGRectGetMaxY(self.contentLabel.frame) + 2.0)];
+        [bezierPath setLineWidth:1.0];
         [self.indicatorColor setStroke];
         [bezierPath stroke];
     }
@@ -643,7 +651,7 @@
         
         CGRect frame = tabView.frame;
         frame.origin.x = contentSizeWidth;
-        frame.size.width = [self.tabWidth floatValue];
+        frame.size.width = CGRectGetWidth(tabView.frame);
         tabView.frame = frame;
         
         contentSizeWidth += CGRectGetWidth(tabView.frame);
@@ -835,7 +843,7 @@
         
         CGRect frame = tabView.frame;
         frame.origin.x = contentSizeWidth;
-        frame.size.width = [self.tabWidth floatValue];
+        frame.size.width = CGRectGetWidth(tabView.bounds);
         tabView.frame = frame;
         
         [self.tabsView addSubview:tabView];
@@ -891,17 +899,30 @@
     if ([[self.tabs objectAtIndex:index] isEqual:[NSNull null]]) {
 
         // Get view from dataSource
-        UIView *tabViewContent = [self.dataSource viewPager:self viewForTabAtIndex:index];
-        tabViewContent.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
+        UILabel *tabViewContent = (UILabel *)[self.dataSource viewPager:self viewForTabAtIndex:index];
+//        tabViewContent.autoresizingMask = UIViewAutoresizingFlexibleHeight;
         
         // Create TabView and subview the content
-        TabView *tabView = [[TabView alloc] initWithFrame:CGRectMake(0.0, 0.0, [self.tabWidth floatValue], [self.tabHeight floatValue])];
+        
+        CGFloat prefixWidth = 0.0;
+        CGFloat postfixWidth = 0.0;
+        
+        if (index == 0) {
+            prefixWidth = 7.5;
+        }
+        
+        if (index == self.tabCount - 1) {
+            postfixWidth = 7.5;
+        }
+        
+
+        TabView *tabView = [[TabView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(tabViewContent.bounds) + 15.0 + prefixWidth + postfixWidth, [self.tabHeight floatValue])];
+        tabViewContent.frame = CGRectMake(prefixWidth + 7.5, CGRectGetMidY(tabView.bounds) - CGRectGetMidY(tabViewContent.bounds), CGRectGetWidth(tabViewContent.bounds) + 7.5, CGRectGetHeight(tabViewContent.bounds));
+        tabView.contentLabel = tabViewContent;
         [tabView addSubview:tabViewContent];
         [tabView setClipsToBounds:YES];
         [tabView setIndicatorColor:self.indicatorColor];
-        
-        tabViewContent.center = tabView.center;
-        
+                
         // Replace the null object with tabView
         [self.tabs replaceObjectAtIndex:index withObject:tabView];
     }
