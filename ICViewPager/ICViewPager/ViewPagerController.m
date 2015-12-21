@@ -238,8 +238,8 @@
 #pragma mark - Setters
 - (void)setTabHeight:(NSNumber *)tabHeight {
     
-    if ([tabHeight floatValue] < 4.0)
-        tabHeight = [NSNumber numberWithFloat:4.0];
+    if ([tabHeight floatValue] < 0.0)
+        tabHeight = [NSNumber numberWithFloat:0.0];
     else if ([tabHeight floatValue] > CGRectGetHeight(self.view.frame))
         tabHeight = [NSNumber numberWithFloat:CGRectGetHeight(self.view.frame)];
     
