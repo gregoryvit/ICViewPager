@@ -746,7 +746,7 @@
                                                               navigationOrientation:UIPageViewControllerNavigationOrientationHorizontal
                                                                             options:nil];
     [self addChildViewController:self.pageViewController];
-
+    
     // Setup some forwarding events to hijack the scrollView
     // Keep a reference to the actual delegate
     self.actualDelegate = ((UIScrollView *)[self.pageViewController.view.subviews objectAtIndex:0]).delegate;
@@ -795,6 +795,8 @@
         self.tabsView.scrollsToTop = NO;
         self.tabsView.showsHorizontalScrollIndicator = NO;
         self.tabsView.showsVerticalScrollIndicator = NO;
+        self.tabsView.decelerationRate = UIScrollViewDecelerationRateFast;
+        self.tabsView.delegate = self;
         self.tabsView.tag = kTabViewTag;
         
         [self.view insertSubview:self.tabsView atIndex:0];
@@ -874,10 +876,10 @@
     }
     
     if ([[self.tabs objectAtIndex:index] isEqual:[NSNull null]]) {
-
+        
         // Get view from dataSource
         UILabel *tabViewContent = (UILabel *)[self.dataSource viewPager:self viewForTabAtIndex:index];
-//        tabViewContent.autoresizingMask = UIViewAutoresizingFlexibleHeight;
+        //        tabViewContent.autoresizingMask = UIViewAutoresizingFlexibleHeight;
         
         // Create TabView and subview the content
         
@@ -892,14 +894,14 @@
             postfixWidth = 7.5;
         }
         
-
+        
         TabView *tabView = [[TabView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(tabViewContent.bounds) + 15.0 + prefixWidth + postfixWidth, [self.tabHeight floatValue])];
         tabViewContent.frame = CGRectMake(prefixWidth + 7.5, CGRectGetMidY(tabView.bounds) - CGRectGetMidY(tabViewContent.bounds), CGRectGetWidth(tabViewContent.bounds) + 7.5, CGRectGetHeight(tabViewContent.bounds));
         tabView.contentLabel = tabViewContent;
         [tabView addSubview:tabViewContent];
         [tabView setClipsToBounds:YES];
         [tabView setIndicatorColor:self.indicatorColor];
-                
+        
         // Replace the null object with tabView
         [self.tabs replaceObjectAtIndex:index withObject:tabView];
     }
@@ -972,6 +974,9 @@
 
 #pragma mark - UIScrollViewDelegate, Responding to Scrolling and Dragging
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidScroll:)]) {
         [self.actualDelegate scrollViewDidScroll:scrollView];
@@ -1009,37 +1014,71 @@
     }
 }
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewWillBeginDragging:)]) {
         [self.actualDelegate scrollViewWillBeginDragging:scrollView];
     }
 }
 - (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
-    if ([self.actualDelegate respondsToSelector:@selector(scrollViewWillEndDragging:withVelocity:targetContentOffset:)]) {
-        [self.actualDelegate scrollViewWillEndDragging:scrollView withVelocity:velocity targetContentOffset:targetContentOffset];
+    if ([scrollView isEqual:self.tabsView]) {
+        UIView *targetView;
+        CGFloat minXDistance = CGFLOAT_MAX;
+        for (UIView *subview in self.tabsView.subviews) {
+            CGFloat startX = CGRectGetMinX(subview.frame);
+            CGFloat currentDistance = ABS(startX - targetContentOffset->x);
+            if (minXDistance > currentDistance) {
+                minXDistance = currentDistance;
+                targetView = subview;
+            }
+        }
+        if (targetView) {
+            targetContentOffset->x = CGRectGetMinX(targetView.frame);
+        }
+    } else {
+        if ([self.actualDelegate respondsToSelector:@selector(scrollViewWillEndDragging:withVelocity:targetContentOffset:)]) {
+            [self.actualDelegate scrollViewWillEndDragging:scrollView withVelocity:velocity targetContentOffset:targetContentOffset];
+        }
     }
 }
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidEndDragging:willDecelerate:)]) {
         [self.actualDelegate scrollViewDidEndDragging:scrollView willDecelerate:decelerate];
     }
 }
 - (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView{
+    if ([scrollView isEqual:self.tabsView]) {
+        return NO;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewShouldScrollToTop:)]) {
         return [self.actualDelegate scrollViewShouldScrollToTop:scrollView];
     }
     return NO;
 }
 - (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidScrollToTop:)]) {
         [self.actualDelegate scrollViewDidScrollToTop:scrollView];
     }
 }
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewWillBeginDecelerating:)]) {
         [self.actualDelegate scrollViewWillBeginDecelerating:scrollView];
     }
 }
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidEndDecelerating:)]) {
         [self.actualDelegate scrollViewDidEndDecelerating:scrollView];
     }
@@ -1047,22 +1086,34 @@
 
 #pragma mark - UIScrollViewDelegate, Managing Zooming
 - (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return nil;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(viewForZoomingInScrollView:)]) {
         return [self.actualDelegate viewForZoomingInScrollView:scrollView];
     }
     return nil;
 }
 - (void)scrollViewWillBeginZooming:(UIScrollView *)scrollView withView:(UIView *)view {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewWillBeginZooming:withView:)]) {
         [self.actualDelegate scrollViewWillBeginZooming:scrollView withView:view];
     }
 }
 - (void)scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidEndZooming:withView:atScale:)]) {
         [self.actualDelegate scrollViewDidEndZooming:scrollView withView:view atScale:scale];
     }
 }
 - (void)scrollViewDidZoom:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidZoom:)]) {
         [self.actualDelegate scrollViewDidZoom:scrollView];
     }
@@ -1070,6 +1121,9 @@
 
 #pragma mark - UIScrollViewDelegate, Responding to Scrolling Animations
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
+    if ([scrollView isEqual:self.tabsView]) {
+        return;
+    }
     if ([self.actualDelegate respondsToSelector:@selector(scrollViewDidEndScrollingAnimation:)]) {
         [self.actualDelegate scrollViewDidEndScrollingAnimation:scrollView];
     }
