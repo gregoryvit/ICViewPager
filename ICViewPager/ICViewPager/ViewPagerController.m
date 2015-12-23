@@ -800,6 +800,8 @@
         self.tabsView.tag = kTabViewTag;
         
         [self.view insertSubview:self.tabsView atIndex:0];
+    } else {
+        self.tabsView.frame = CGRectMake(0.0, 0.0, CGRectGetWidth(self.view.frame), [self.tabHeight floatValue]);
     }
     
     // Add tab views to _tabsView
@@ -833,6 +835,8 @@
         UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTapGesture:)];
         [tabView addGestureRecognizer:tapGestureRecognizer];
     }
+    
+    ((UIScrollView *)[self.pageViewController.view.subviews objectAtIndex:0]).scrollEnabled = self.tabCount > 1;
     
     // Extend contentSizeWidth if fixLatterTabsPositions is provided YES
     if ([self.fixLatterTabsPositions boolValue]) {
