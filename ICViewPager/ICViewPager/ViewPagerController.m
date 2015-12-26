@@ -21,6 +21,7 @@
 #define kCenterCurrentTab 0.0
 #define kFixFormerTabsPositions 0.0
 #define kFixLatterTabsPositions 0.0
+#define kTabsScrollable 1.0
 
 #define kIndicatorColor [UIColor colorWithRed:178.0/255.0 green:203.0/255.0 blue:57.0/255.0 alpha:0.75]
 #define kTabsViewBackgroundColor [UIColor colorWithRed:234.0/255.0 green:234.0/255.0 blue:234.0/255.0 alpha:0.75]
@@ -127,6 +128,7 @@
 @property (nonatomic) NSNumber *centerCurrentTab;
 @property (nonatomic) NSNumber *fixFormerTabsPositions;
 @property (nonatomic) NSNumber *fixLatterTabsPositions;
+@property (nonatomic) NSNumber *tabsScrollable;
 
 @property (nonatomic) NSUInteger tabCount;
 @property (nonatomic) NSUInteger activeTabIndex;
@@ -555,6 +557,9 @@
     _tabsViewBackgroundColor = nil;
     _contentViewBackgroundColor = nil;
     
+    _activeTabIndex = 0;
+    _activeContentIndex = 0;
+    
     // Call to setup again with the updated data
     [self defaultSetup];
 }
@@ -606,6 +611,8 @@
     self.centerCurrentTab = [NSNumber numberWithFloat:[self.delegate viewPager:self valueForOption:ViewPagerOptionCenterCurrentTab withDefault:kCenterCurrentTab]];
     self.fixFormerTabsPositions = [NSNumber numberWithFloat:[self.delegate viewPager:self valueForOption:ViewPagerOptionFixFormerTabsPositions withDefault:kFixFormerTabsPositions]];
     self.fixLatterTabsPositions = [NSNumber numberWithFloat:[self.delegate viewPager:self valueForOption:ViewPagerOptionFixLatterTabsPositions withDefault:kFixLatterTabsPositions]];
+    self.tabsScrollable = [NSNumber numberWithFloat:[self.delegate viewPager:self valueForOption:ViewPagerOptionTabsScrollable withDefault:kTabsScrollable]];
+    
     
     // We should update contentSize property of our tabsView, so we should recalculate it with the new values
     CGFloat contentSizeWidth = 0;
@@ -647,6 +654,7 @@
     
     // Update tabsView's contentSize with the new width
     self.tabsView.contentSize = CGSizeMake(contentSizeWidth, [self.tabHeight floatValue]);
+    self.tabsView.scrollEnabled = [self.tabsScrollable boolValue];
     
 }
 - (void)setNeedsReloadColors {
@@ -798,6 +806,7 @@
         self.tabsView.decelerationRate = UIScrollViewDecelerationRateFast;
         self.tabsView.delegate = self;
         self.tabsView.tag = kTabViewTag;
+        self.tabsView.scrollEnabled = [self.tabsScrollable boolValue];
         
         [self.view insertSubview:self.tabsView atIndex:0];
     } else {
