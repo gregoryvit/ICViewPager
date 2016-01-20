@@ -537,6 +537,15 @@
     return _contentViewBackgroundColor;
 }
 
+- (NSNumber *)tabsScrollable {
+    if (!_tabsScrollable) {
+        if ([self.delegate respondsToSelector:@selector(viewPager:valueForOption:withDefault:)]) {
+            self.tabsScrollable = [NSNumber numberWithFloat:[self.delegate viewPager:self valueForOption:ViewPagerOptionTabsScrollable withDefault:kTabsScrollable]];
+        }
+    }
+    return _tabsScrollable;
+}
+
 #pragma mark - Public methods
 - (void)reloadData {
     
