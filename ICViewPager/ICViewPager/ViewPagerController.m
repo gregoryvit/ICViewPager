@@ -18,6 +18,7 @@
 #define kTabWidth 128.0
 #define kTabLocation 1.0
 #define kStartFromSecondTab 0.0
+#define kShowPreviousTab 0.0
 #define kCenterCurrentTab 0.0
 #define kFixFormerTabsPositions 0.0
 #define kFixLatterTabsPositions 0.0
@@ -129,6 +130,7 @@
 @property (nonatomic) NSNumber *fixFormerTabsPositions;
 @property (nonatomic) NSNumber *fixLatterTabsPositions;
 @property (nonatomic) NSNumber *tabsScrollable;
+@property (nonatomic) NSNumber *showPreviousTab;
 
 @property (nonatomic) NSUInteger tabCount;
 @property (nonatomic) NSUInteger activeTabIndex;
@@ -151,6 +153,7 @@
 @synthesize tabWidth = _tabWidth;
 @synthesize tabLocation = _tabLocation;
 @synthesize startFromSecondTab = _startFromSecondTab;
+@synthesize showPreviousTab = _showPreviousTab;
 @synthesize centerCurrentTab = _centerCurrentTab;
 @synthesize fixFormerTabsPositions = _fixFormerTabsPositions;
 @synthesize fixLatterTabsPositions = _fixLatterTabsPositions;
@@ -321,23 +324,40 @@
     UIView *tabView = [self tabViewAtIndex:self.activeTabIndex];
     CGRect frame = tabView.frame;
     
-    if ([self.centerCurrentTab boolValue]) {
-        
-        frame.origin.x += (CGRectGetWidth(frame) / 2);
-        frame.origin.x -= CGRectGetWidth(self.tabsView.frame) / 2;
-        frame.size.width = CGRectGetWidth(self.tabsView.frame);
-        
-        if (frame.origin.x < 0) {
-            frame.origin.x = 0;
-        }
-        
-        if ((frame.origin.x + CGRectGetWidth(frame)) > self.tabsView.contentSize.width) {
-            frame.origin.x = (self.tabsView.contentSize.width - CGRectGetWidth(self.tabsView.frame));
-        }
-    } else {
+    BOOL showPreviousTab = [[self showPreviousTab] boolValue];
+    
+    if (showPreviousTab && self.activeTabIndex > 0) {
+        tabView = [self tabViewAtIndex:self.activeTabIndex-1];
+        frame = tabView.frame;
         
         frame.origin.x -= [self.tabOffset floatValue];
         frame.size.width = CGRectGetWidth(self.tabsView.frame);
+        
+        
+    }
+    else {
+        if ([self.centerCurrentTab boolValue]) {
+            
+            frame.origin.x += (CGRectGetWidth(frame) / 2);
+            frame.origin.x -= CGRectGetWidth(self.tabsView.frame) / 2;
+            frame.size.width = CGRectGetWidth(self.tabsView.frame);
+            
+            if (frame.origin.x < 0) {
+                frame.origin.x = 0;
+            }
+            
+            if ((frame.origin.x + CGRectGetWidth(frame)) > self.tabsView.contentSize.width) {
+                frame.origin.x = (self.tabsView.contentSize.width - CGRectGetWidth(self.tabsView.frame));
+            }
+        } else {
+            
+            frame.origin.x -= [self.tabOffset floatValue];
+            frame.size.width = CGRectGetWidth(self.tabsView.frame);
+        }
+    }
+    
+    if (showPreviousTab && self.activeTabIndex > 0) {
+        frame.origin.x += [self.tabOffset floatValue];
     }
     
     [self.tabsView scrollRectToVisible:frame animated:YES];
@@ -472,6 +492,18 @@
     }
     return _startFromSecondTab;
 }
+
+- (NSNumber *)showPreviousTab {
+    
+    if (!_showPreviousTab) {
+        CGFloat value = kShowPreviousTab;
+        if ([self.delegate respondsToSelector:@selector(viewPager:valueForOption:withDefault:)])
+            value = [self.delegate viewPager:self valueForOption:ViewPagerOptionShowPreviousTab withDefault:value];
+        self.showPreviousTab = [NSNumber numberWithFloat:value];
+    }
+    return _showPreviousTab;
+}
+
 - (NSNumber *)centerCurrentTab {
     
     if (!_centerCurrentTab) {
@@ -557,6 +589,7 @@
     _tabWidth = nil;
     _tabLocation = nil;
     _startFromSecondTab = nil;
+    _showPreviousTab = nil;
     _centerCurrentTab = nil;
     _fixFormerTabsPositions = nil;
     _fixLatterTabsPositions = nil;
@@ -737,6 +770,8 @@
             return [[self startFromSecondTab] floatValue];
         case ViewPagerOptionCenterCurrentTab:
             return [[self centerCurrentTab] floatValue];
+        case ViewPagerOptionShowPreviousTab:
+            return [[self showPreviousTab] floatValue];
         default:
             return NAN;
     }
@@ -1004,36 +1039,46 @@
         [self.actualDelegate scrollViewDidScroll:scrollView];
     }
     
-    if (![self isAnimatingToTab]) {
-        UIView *tabView = [self tabViewAtIndex:self.activeTabIndex];
-        
-        // Get the related tab view position
-        CGRect frame = tabView.frame;
-        
-        CGFloat movedRatio = (scrollView.contentOffset.x / CGRectGetWidth(scrollView.frame)) - 1;
-        frame.origin.x += movedRatio * CGRectGetWidth(frame);
-        
-        if ([self.centerCurrentTab boolValue]) {
-            
-            frame.origin.x += (frame.size.width / 2);
-            frame.origin.x -= CGRectGetWidth(self.tabsView.frame) / 2;
-            frame.size.width = CGRectGetWidth(self.tabsView.frame);
-            
-            if (frame.origin.x < 0) {
-                frame.origin.x = 0;
-            }
-            
-            if ((frame.origin.x + frame.size.width) > self.tabsView.contentSize.width) {
-                frame.origin.x = (self.tabsView.contentSize.width - CGRectGetWidth(self.tabsView.frame));
-            }
-        } else {
-            
-            frame.origin.x -= [self.tabOffset floatValue];
-            frame.size.width = CGRectGetWidth(self.tabsView.frame);
-        }
-        
-        [self.tabsView scrollRectToVisible:frame animated:NO];
-    }
+    //    if (![self isAnimatingToTab]) {
+    //        UIView *tabView = [self tabViewAtIndex:self.activeTabIndex];
+    //
+    //
+    //        if (self.activeTabIndex > 0) {
+    //            tabView = [self tabViewAtIndex:self.activeTabIndex-1];
+    //        }
+    //
+    //        // Get the related tab view position
+    //        CGRect frame = tabView.frame;
+    //
+    //        CGFloat movedRatio = (scrollView.contentOffset.x / CGRectGetWidth(scrollView.frame)) - 1;
+    //        frame.origin.x += movedRatio * CGRectGetWidth(frame);
+    //
+    //        if ([self.centerCurrentTab boolValue]) {
+    //
+    //            frame.origin.x += (frame.size.width / 2);
+    //            frame.origin.x -= CGRectGetWidth(self.tabsView.frame) / 2;
+    //            frame.size.width = CGRectGetWidth(self.tabsView.frame);
+    //
+    //            if (frame.origin.x < 0) {
+    //                frame.origin.x = 0;
+    //            }
+    //
+    //            if ((frame.origin.x + frame.size.width) > self.tabsView.contentSize.width) {
+    //                frame.origin.x = (self.tabsView.contentSize.width - CGRectGetWidth(self.tabsView.frame));
+    //            }
+    //        } else {
+    //
+    //            frame.origin.x -= [self.tabOffset floatValue];
+    //            frame.size.width = CGRectGetWidth(self.tabsView.frame);
+    //        }
+    //
+    //        if (self.activeTabIndex > 0) {
+    //            frame.origin.x += [self.tabOffset floatValue];
+    //        }
+    //
+    //
+    //        [self.tabsView scrollRectToVisible:frame animated:NO];
+    //    }
 }
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
     if ([scrollView isEqual:self.tabsView]) {
